@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 15:52:04 +0200
+Subject: [PATCH] Dont place player in world if kicked before login
+
+
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 182acaad79e14e5e120094916a0d295a4584de7a..76641b39a75f906c94d873ce9752d2cafa13d523 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -272,6 +272,13 @@ public abstract class PlayerList {
+         org.spigotmc.event.player.PlayerSpawnLocationEvent ev = new com.destroystokyo.paper.event.player.PlayerInitialSpawnEvent(spawnPlayer, spawnPlayer.getLocation()); // Paper use our duplicate event
+         this.cserver.getPluginManager().callEvent(ev);
+ 
++        // SlimyPaper start - do not place player in world if kicked before being spawned in
++        if (!connection.isConnected() || player.quitReason != null) {
++            /*pendingPlayers.remove(player.getUUID(), player);*/ // SlimyPaper do not place player in world if kicked before being spawned in - this patch was removed from Paper but might be useful later
++            return;
++        }
++        // SlimyPaper end - do not place player in world if kicked before being spawned in
++
+         Location loc = ev.getSpawnLocation();
+         worldserver1 = ((CraftWorld) loc.getWorld()).getHandle();
+ 

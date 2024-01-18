@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 14:35:03 +0200
+Subject: [PATCH] Disable spooky season checks
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/ambient/Bat.java b/src/main/java/net/minecraft/world/entity/ambient/Bat.java
+index 1eab1393a2636c4a247f25dae317cea60cc7021c..5da08acadca31fef3a6eba0edf51c5faf23a1d0b 100644
+--- a/src/main/java/net/minecraft/world/entity/ambient/Bat.java
++++ b/src/main/java/net/minecraft/world/entity/ambient/Bat.java
+@@ -305,9 +305,12 @@ public class Bat extends AmbientCreature {
+             int i = world.getMaxLocalRawBrightness(pos);
+             byte b0 = 4;
+ 
+-            if (Bat.isHalloweenSeason(world.getMinecraftWorld())) { // Purpur
+-                b0 = 7;
+-            } else if (random.nextBoolean()) {
++            // Purpur start - disable spooky season checks
++            // if (Bat.isHalloweenSeason(world.getMinecraftWorld())) { // Purpur
++            //     b0 = 7;
++            // } else
++            // Purpur end
++            if (random.nextBoolean()) {
+                 return false;
+             }
+ 
+@@ -315,23 +318,25 @@ public class Bat extends AmbientCreature {
+         }
+     }
+ 
+-    // Pufferfish start - only check for spooky season once an hour
+-    private static boolean isSpookySeason = false;
+-    private static final int ONE_HOUR = 20 * 60 * 60;
+-    private static int lastSpookyCheck = -ONE_HOUR;
+-    public static boolean isHalloweenSeason(Level level) { return level.purpurConfig.forceHalloweenSeason || isHalloween(); } // Purpur
+-    private static boolean isHalloween() {
+-        if (net.minecraft.server.MinecraftServer.currentTick - lastSpookyCheck > ONE_HOUR) {
+-        LocalDate localdate = LocalDate.now();
+-        int i = localdate.get(ChronoField.DAY_OF_MONTH);
+-        int j = localdate.get(ChronoField.MONTH_OF_YEAR);
+-
+-        isSpookySeason = j == 10 && i >= 20 || j == 11 && i <= 3;
+-        lastSpookyCheck = net.minecraft.server.MinecraftServer.currentTick;
+-        }
+-        return isSpookySeason;
+-    }
+-    // Pufferfish end
++    // Purpur start - disable spooky season checks
++    // Pufferfish start - disable check for spooky season once an hour
++    // private static boolean isSpookySeason = false;
++    // private static final int ONE_HOUR = 20 * 60 * 60;
++    // private static int lastSpookyCheck = -ONE_HOUR;
++    // public static boolean isHalloweenSeason(Level level) { return level.purpurConfig.forceHalloweenSeason || isHalloween(); } // Purpur
++    // private static boolean isHalloween() {
++    //     if (net.minecraft.server.MinecraftServer.currentTick - lastSpookyCheck > ONE_HOUR) {
++    //     LocalDate localdate = LocalDate.now();
++    //     int i = localdate.get(ChronoField.DAY_OF_MONTH);
++    //     int j = localdate.get(ChronoField.MONTH_OF_YEAR);
++    //
++    //     isSpookySeason = j == 10 && i >= 20 || j == 11 && i <= 3;
++    //     lastSpookyCheck = net.minecraft.server.MinecraftServer.currentTick;
++    //     }
++    //     return isSpookySeason;
++    // }
++    // // Pufferfish end
++    // Purpur end
+ 
+     @Override
+     protected float getStandingEyeHeight(Pose pose, EntityDimensions dimensions) {
+diff --git a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+index 28eb98d383d6846a25c29f8cd8ff211c360a56dc..aa853aa75ed0bb162ddc3ec04472db74dc77d4dd 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
++++ b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+@@ -142,12 +142,14 @@ public abstract class AbstractSkeleton extends Monster implements RangedAttackMo
+         this.populateDefaultEquipmentEnchantments(randomsource, difficulty);
+         this.reassessWeaponGoal();
+         this.setCanPickUpLoot(this.level().paperConfig().entities.behavior.mobsCanAlwaysPickUpLoot.skeletons || randomsource.nextFloat() < 0.55F * difficulty.getSpecialMultiplier()); // Paper
+-        if (this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+-            if (net.minecraft.world.entity.ambient.Bat.isHalloweenSeason(world.getMinecraftWorld()) && this.random.nextFloat() < this.level().purpurConfig.chanceHeadHalloweenOnEntity) { // Purpur
+-                this.setItemSlot(EquipmentSlot.HEAD, new ItemStack(randomsource.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.CARVED_PUMPKIN));
+-                this.armorDropChances[EquipmentSlot.HEAD.getIndex()] = 0.0F;
+-            }
+-        }
++        // Purpur start - disable spooky season checks
++        // if (this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
++            // if (net.minecraft.world.entity.ambient.Bat.isHalloweenSeason(world.getMinecraftWorld()) && this.random.nextFloat() < this.level().purpurConfig.chanceHeadHalloweenOnEntity) { // Purpur
++            //     this.setItemSlot(EquipmentSlot.HEAD, new ItemStack(randomsource.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.CARVED_PUMPKIN));
++            //     this.armorDropChances[EquipmentSlot.HEAD.getIndex()] = 0.0F;
++            // }
++            // Purpur end
++        // }
+ 
+         return entityData;
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Zombie.java b/src/main/java/net/minecraft/world/entity/monster/Zombie.java
+index 1be1bfb831198b68d8e20bf5ff922edff8832114..e81499a882745ac6493978446921264ba46cf064 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Zombie.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Zombie.java
+@@ -590,12 +590,14 @@ public class Zombie extends Monster {
+             this.populateDefaultEquipmentEnchantments(randomsource, difficulty);
+         }
+ 
+-        if (this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
+-            if (net.minecraft.world.entity.ambient.Bat.isHalloweenSeason(world.getMinecraftWorld()) && this.random.nextFloat() < this.level().purpurConfig.chanceHeadHalloweenOnEntity) { // Purpur
+-                this.setItemSlot(EquipmentSlot.HEAD, new ItemStack(randomsource.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.CARVED_PUMPKIN));
+-                this.armorDropChances[EquipmentSlot.HEAD.getIndex()] = 0.0F;
+-            }
+-        }
++        // Purpur start - disable spooky season checks
++        // if (this.getItemBySlot(EquipmentSlot.HEAD).isEmpty()) {
++            // if (net.minecraft.world.entity.ambient.Bat.isHalloweenSeason(world.getMinecraftWorld()) && this.random.nextFloat() < this.level().purpurConfig.chanceHeadHalloweenOnEntity) { // Purpur
++            //                 this.setItemSlot(EquipmentSlot.HEAD, new ItemStack(randomsource.nextFloat() < 0.1F ? Blocks.JACK_O_LANTERN : Blocks.CARVED_PUMPKIN));
++            //                 this.armorDropChances[EquipmentSlot.HEAD.getIndex()] = 0.0F;
++            //             }
++        // }
++        // Purpur end
+ 
+         this.handleAttributes(f);
+         return (SpawnGroupData) object;

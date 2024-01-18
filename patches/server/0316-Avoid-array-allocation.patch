@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 14:55:10 +0200
+Subject: [PATCH] Avoid array allocation
+
+
+diff --git a/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..3bddde540b990b65e49fea7a4acfd91c2077f9c1
+--- /dev/null
++++ b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+@@ -0,0 +1,8 @@
++package me.m0dii.slimypurpur.server.util;
++
++public final class Constants {
++    public static final int[] ZERO_ARRAY = new int[]{0};
++    public static final int[] EMPTY_ARRAY = new int[0];
++    public static final int[] ONE_ARRAY = new int[]{1};
++    public static final int[] TWO_ARRAY = new int[]{2};
++}
+diff --git a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+index 939f003dd488fe7e6c63db38fddebfb6b5cc0f38..351f7613f3f0234fe92654a20996222fc43e39ac 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
++++ b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+@@ -192,7 +192,7 @@ public class WitherBoss extends Monster implements PowerableMob, RangedAttackMob
+ 
+     @Override
+     public boolean onClick(net.minecraft.world.InteractionHand hand) {
+-        return shoot(getRider(), hand == net.minecraft.world.InteractionHand.MAIN_HAND ? new int[]{1} : new int[]{2});
++        return shoot(getRider(), hand == net.minecraft.world.InteractionHand.MAIN_HAND ? me.m0dii.slimypurpur.server.util.Constants.ONE_ARRAY : me.m0dii.slimypurpur.server.util.Constants.TWO_ARRAY); // SlimyPurpur - avoid array allocation
+     }
+ 
+     public boolean shoot(@Nullable Player rider, int[] heads) {
+diff --git a/src/main/java/net/minecraft/world/level/block/ComposterBlock.java b/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
+index 596b77306f690a2298835f0f0fea1abee2a7c85d..f8c58b699522c33723a5836f65c276320b356833 100644
+--- a/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
+@@ -443,7 +443,7 @@ public class ComposterBlock extends Block implements WorldlyContainerHolder {
+ 
+         @Override
+         public int[] getSlotsForFace(Direction side) {
+-            return side == Direction.DOWN ? new int[]{0} : new int[0];
++            return side == Direction.DOWN ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_ARRAY; // SlimyPurpur - avoid array allocation
+         }
+ 
+         @Override
+@@ -492,7 +492,7 @@ public class ComposterBlock extends Block implements WorldlyContainerHolder {
+ 
+         @Override
+         public int[] getSlotsForFace(Direction side) {
+-            return side == Direction.UP ? new int[]{0} : new int[0];
++            return side == Direction.UP ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_ARRAY; // SlimyPurpur - avoid array allocation
+         }
+ 
+         @Override

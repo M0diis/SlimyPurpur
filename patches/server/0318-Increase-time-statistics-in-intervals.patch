@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 15:56:08 +0200
+Subject: [PATCH] Increase time statistics in intervals
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
+index 724329ded5d72eb230db392972d30e7ba4e69ceb..4853a3454e5fa0ad5c2991eabf6233b483e93005 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Player.java
++++ b/src/main/java/net/minecraft/world/entity/player/Player.java
+@@ -192,6 +192,7 @@ public abstract class Player extends LivingEntity {
+     public int burpDelay = 0; // Purpur
+     public boolean canPortalInstant = false; // Purpur
+ 
++    private static final int increaseTimeStatisticsInterval = 20; // SlimyPaper - increase time statistics in intervals
+     // CraftBukkit start
+     public boolean fauxSleeping;
+     public int oldLevel = -1;
+@@ -312,19 +313,23 @@ public abstract class Player extends LivingEntity {
+         this.moveCloak();
+         if (!this.level().isClientSide) {
+             this.foodData.tick(this);
+-            this.awardStat(Stats.PLAY_TIME);
+-            this.awardStat(Stats.TOTAL_WORLD_TIME);
+-            if (this.isAlive()) {
+-                this.awardStat(Stats.TIME_SINCE_DEATH);
+-            }
++            // SlimyPaper start - increase time statistics in intervals
++            if (this.tickCount % increaseTimeStatisticsInterval == 0) {
++                this.awardStat(Stats.PLAY_TIME, increaseTimeStatisticsInterval);
++                this.awardStat(Stats.TOTAL_WORLD_TIME, increaseTimeStatisticsInterval);
++                if (this.isAlive()) {
++                    this.awardStat(Stats.TIME_SINCE_DEATH, increaseTimeStatisticsInterval);
++                }
+ 
+-            if (this.isDiscrete()) {
+-                this.awardStat(Stats.CROUCH_TIME);
+-            }
++                if (this.isDiscrete()) {
++                    this.awardStat(Stats.CROUCH_TIME, increaseTimeStatisticsInterval);
++                }
+ 
+-            if (!this.isSleeping()) {
+-                this.awardStat(Stats.TIME_SINCE_REST);
++                if (!this.isSleeping()) {
++                    this.awardStat(Stats.TIME_SINCE_REST, increaseTimeStatisticsInterval);
++                }
+             }
++            // SlimyPaper end
+         }
+ 
+         int i = 29999999;
