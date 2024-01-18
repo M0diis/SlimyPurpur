@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 12:02:11 +0200
+Subject: [PATCH] Skip distanceToSqr call in ServerEntity sendChanges
+
+
+diff --git a/src/main/java/net/minecraft/server/level/ServerEntity.java b/src/main/java/net/minecraft/server/level/ServerEntity.java
+index c6ef510d335b8baea58c4491853414a52a06b66b..b8987bcc45a9557db01e1d9d94c8574da8fd5fdf 100644
+--- a/src/main/java/net/minecraft/server/level/ServerEntity.java
++++ b/src/main/java/net/minecraft/server/level/ServerEntity.java
+@@ -204,12 +204,14 @@ public class ServerEntity {
+ 
+                 if ((this.trackDelta || this.entity.hasImpulse || this.entity instanceof LivingEntity && ((LivingEntity) this.entity).isFallFlying()) && this.tickCount > 0) {
+                     Vec3 vec3d1 = this.entity.getDeltaMovement();
+-                    double d0 = vec3d1.distanceToSqr(this.ap);
++                    if (vec3d1 != this.ap) { // Purpur start - skip distanceToSqr call in ServerEntity#sendChanges if the delta movement hasn't changed
++                        double d0 = vec3d1.distanceToSqr(this.ap);
+ 
+-                    if (d0 > 1.0E-7D || d0 > 0.0D && vec3d1.lengthSqr() == 0.0D) {
+-                        this.ap = vec3d1;
+-                        this.broadcast.accept(new ClientboundSetEntityMotionPacket(this.entity.getId(), this.ap));
+-                    }
++                        if (d0 > 1.0E-7D || d0 > 0.0D && vec3d1.lengthSqr() == 0.0D) {
++                            this.ap = vec3d1;
++                            this.broadcast.accept(new ClientboundSetEntityMotionPacket(this.entity.getId(), this.ap));
++                        }
++                    } // Purpur end
+                 }
+ 
+                 if (packet1 != null) {
