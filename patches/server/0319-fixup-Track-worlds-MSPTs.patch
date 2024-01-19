@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 16:58:15 +0200
+Subject: [PATCH] fixup! Track worlds MSPTs
+
+
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 101f56a41574a6fdbc76bf24dd22f57748ee9947..58a6cc3211417e6915d7677fcddedac8f1feb9dc 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1589,8 +1589,8 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+ 
+             try {
+                 //worldserver.timings.doTick.startTiming(); // Spigot // Purpur
+-                worldserver.tick(shouldKeepTicking);
+                 long i = Util.getNanos(); // Purpur - track world's MSPT
++                worldserver.tick(shouldKeepTicking);
+                 // Purpur start - track world's MSPT
+                 long j = Util.getNanos() - i;
+ 

@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 17:13:14 +0200
+Subject: [PATCH] Ignore useless packets
+
+
+diff --git a/src/main/java/net/minecraft/server/level/ServerEntity.java b/src/main/java/net/minecraft/server/level/ServerEntity.java
+index b8987bcc45a9557db01e1d9d94c8574da8fd5fdf..4d234982cd696676d45c37023ac888a2db17d4fc 100644
+--- a/src/main/java/net/minecraft/server/level/ServerEntity.java
++++ b/src/main/java/net/minecraft/server/level/ServerEntity.java
+@@ -199,6 +199,8 @@ public class ServerEntity {
+                         packet1 = new ClientboundTeleportEntityPacket(this.entity);
+                         flag4 = true;
+                         flag5 = true;
++
++                        if(isUselessPacket(packet1)) packet1 = null; // SlimyPurpur - Ignore useless packets
+                     }
+                 }
+ 
+@@ -274,6 +276,19 @@ public class ServerEntity {
+         });
+     }
+ 
++    // SlimyPurpur start - Ignore useless packets
++    private boolean isUselessPacket(@Nullable Packet<?> packet) {
++        if (!(packet instanceof ClientboundMoveEntityPacket p)) return false;
++        if (p instanceof ClientboundMoveEntityPacket.Pos)
++            return p.getXa() == 0 && p.getYa() == 0 && p.getZa() == 0;
++        if (p instanceof ClientboundMoveEntityPacket.Rot)
++            return p.getxRot() == 0 && p.getyRot() == 0;
++        if (p instanceof ClientboundMoveEntityPacket.PosRot)
++            return p.getXa() == 0 && p.getYa() == 0 && p.getZa() == 0 && p.getxRot() == 0 && p.getyRot() == 0;
++        return false;
++    }
++    // SlimyPurpur end
++
+     public void removePairing(ServerPlayer player) {
+         this.entity.stopSeenByPlayer(player);
+         player.connection.send(new ClientboundRemoveEntitiesPacket(new int[]{this.entity.getId()}));

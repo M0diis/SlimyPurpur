@@ -1,0 +1,18 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 17:10:18 +0200
+Subject: [PATCH] Avoid chunk loading for phantom spawns
+
+
+diff --git a/src/main/java/net/minecraft/world/level/levelgen/PhantomSpawner.java b/src/main/java/net/minecraft/world/level/levelgen/PhantomSpawner.java
+index f74c5eda91a3d521763ec7bc33f23e0c62458cc2..9f514da68f76aef6f8b1815a10251179be635902 100644
+--- a/src/main/java/net/minecraft/world/level/levelgen/PhantomSpawner.java
++++ b/src/main/java/net/minecraft/world/level/levelgen/PhantomSpawner.java
+@@ -71,6 +71,7 @@ public class PhantomSpawner implements CustomSpawner {
+ 
+                                     if (randomsource.nextInt(j) >= world.paperConfig().entities.behavior.playerInsomniaStartTicks) { // Paper
+                                         BlockPos blockposition1 = blockposition.above(20 + randomsource.nextInt(15)).east(-10 + randomsource.nextInt(21)).south(-10 + randomsource.nextInt(21));
++                                        if (!world.hasChunkAt(blockposition1)) continue; // SlimyPurpur - Avoid chunk loading for phantom spawns
+                                         BlockState iblockdata = world.getBlockState(blockposition1);
+                                         FluidState fluid = world.getFluidState(blockposition1);
+ 

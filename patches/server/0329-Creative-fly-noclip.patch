@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 23:13:27 +0200
+Subject: [PATCH] Creative fly noclip
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/player/Player.java b/src/main/java/net/minecraft/world/entity/player/Player.java
+index 4853a3454e5fa0ad5c2991eabf6233b483e93005..3ec7b6af829a925f9a0e0ef4ddcf343a2f5e73a5 100644
+--- a/src/main/java/net/minecraft/world/entity/player/Player.java
++++ b/src/main/java/net/minecraft/world/entity/player/Player.java
+@@ -272,9 +272,10 @@ public abstract class Player extends LivingEntity {
+             this.level().playSound(null, getX(), getY(), getZ(), SoundEvents.PLAYER_BURP, SoundSource.PLAYERS, 1.0F, this.level().random.nextFloat() * 0.1F + 0.9F);
+         }
+         // Purpur end
+-
+-        this.noPhysics = this.isSpectator();
+-        if (this.isSpectator()) {
++        // SlimyPurpur start - creative no clip
++        this.noPhysics = this.isCreativeFlyOrSpectator();
++        if (this.isCreativeFlyOrSpectator()) {
++        // if (this.isSpectator()) { // SlimyPurpur end - creative no clip
+             this.setOnGround(false);
+         }
+ 
+@@ -460,7 +461,7 @@ public abstract class Player extends LivingEntity {
+ 
+             Pose entitypose1;
+ 
+-            if (!this.isSpectator() && !this.isPassenger() && !this.canPlayerFitWithinBlocksAndEntitiesWhen(entitypose)) {
++            if (!this.isCreativeFlyOrSpectator() && !this.isPassenger() && !this.canPlayerFitWithinBlocksAndEntitiesWhen(entitypose)) { // SlimyPurpur - creative no clip
+                 if (this.canPlayerFitWithinBlocksAndEntitiesWhen(Pose.CROUCHING)) {
+                     entitypose1 = Pose.CROUCHING;
+                 } else {
+@@ -625,7 +626,7 @@ public abstract class Player extends LivingEntity {
+         }
+ 
+         this.bob += (f - this.bob) * 0.4F;
+-        if (this.getHealth() > 0.0F && !this.isSpectator()) {
++        if (this.getHealth() > 0.0F && !this.isCreativeFlyOrSpectator()) { // SlimyPurpur - creative no clip
+             AABB axisalignedbb;
+ 
+             if (this.isPassenger() && !this.getVehicle().isRemoved()) {
+@@ -662,6 +663,21 @@ public abstract class Player extends LivingEntity {
+ 
+     }
+ 
++    // SlimyPurpur start - creative no clip
++    public boolean isCreativeFlyOrSpectator() {
++        return isSpectator() || (isCreative() && getAbilities().flying);
++    }
++
++    public boolean canSpectatingPlace(Level world, BlockState state, BlockPos pos, net.minecraft.world.phys.shapes.CollisionContext context) {
++        if (this.isCreativeFlyOrSpectator()) {
++            net.minecraft.world.phys.shapes.VoxelShape voxelShape = state.getCollisionShape(world, pos, context);
++            return voxelShape.isEmpty() || world.isUnobstructed(this, voxelShape.move(pos.getX(), pos.getY(), pos.getZ()));
++        } else {
++            return world.isUnobstructed(state, pos, context);
++        }
++    }
++    // SlimyPurpur end - creative no clip
++
+     private void playShoulderEntityAmbientSound(@Nullable CompoundTag entityNbt) {
+         if (entityNbt != null && (!entityNbt.contains("Silent") || !entityNbt.getBoolean("Silent")) && this.level().random.nextInt(200) == 0) {
+             String s = entityNbt.getString("id");
+diff --git a/src/main/java/net/minecraft/world/item/BlockItem.java b/src/main/java/net/minecraft/world/item/BlockItem.java
+index 42bfde8e36b6395f50973300313d6959e2735327..5183512c96e0005ed261f038f931353679a3f072 100644
+--- a/src/main/java/net/minecraft/world/item/BlockItem.java
++++ b/src/main/java/net/minecraft/world/item/BlockItem.java
+@@ -228,7 +228,7 @@ public class BlockItem extends Item {
+         CollisionContext voxelshapecollision = entityhuman == null ? CollisionContext.empty() : CollisionContext.of(entityhuman);
+         // CraftBukkit start - store default return
+         Level world = context.getLevel(); // Paper
+-        boolean defaultReturn = (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos())) && world.checkEntityCollision(state, entityhuman, voxelshapecollision, context.getClickedPos(), true); // Paper
++        boolean defaultReturn = (!this.mustSurvive() || state.canSurvive(context.getLevel(), context.getClickedPos())) && (context.getPlayer().canSpectatingPlace(world, state, context.getClickedPos(), voxelshapecollision)); // Paper // SlimyPurpur - creative no clip // Paper
+         org.bukkit.entity.Player player = (context.getPlayer() instanceof ServerPlayer) ? (org.bukkit.entity.Player) context.getPlayer().getBukkitEntity() : null;
+ 
+         BlockCanBuildEvent event = new BlockCanBuildEvent(CraftBlock.at(context.getLevel(), context.getClickedPos()), player, CraftBlockData.fromData(state), defaultReturn, org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(context.getHand())); // Paper - expose hand
+diff --git a/src/main/java/net/minecraft/world/item/StandingAndWallBlockItem.java b/src/main/java/net/minecraft/world/item/StandingAndWallBlockItem.java
+index 88072259a9de205db428351c5c9f6114e199e402..a1779794ecef1b774de2f6addaea59d6405d1dcd 100644
+--- a/src/main/java/net/minecraft/world/item/StandingAndWallBlockItem.java
++++ b/src/main/java/net/minecraft/world/item/StandingAndWallBlockItem.java
+@@ -56,7 +56,7 @@ public class StandingAndWallBlockItem extends BlockItem {
+ 
+         // CraftBukkit start
+         if (iblockdata1 != null) {
+-            boolean defaultReturn = world.isUnobstructed(iblockdata1, blockposition, CollisionContext.empty());
++            boolean defaultReturn = context.getPlayer() != null ? context.getPlayer().canSpectatingPlace(world, iblockdata1, blockposition, CollisionContext.empty()) : world.isUnobstructed(iblockdata1, blockposition, CollisionContext.empty()); // SlimyPurpur - creative no clip
+             org.bukkit.entity.Player player = (context.getPlayer() instanceof ServerPlayer) ? (org.bukkit.entity.Player) context.getPlayer().getBukkitEntity() : null;
+ 
+             BlockCanBuildEvent event = new BlockCanBuildEvent(CraftBlock.at(world, blockposition), player, CraftBlockData.fromData(iblockdata1), defaultReturn, org.bukkit.craftbukkit.CraftEquipmentSlot.getHand(context.getHand())); // Paper - expose hand
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java
+index 1fa22445a4ecc8c08dbcf0cc6bd39dc5003604c4..1551013fcee1c8bbf3fa0bf40326348d148da4a4 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/ShulkerBoxBlockEntity.java
+@@ -162,7 +162,7 @@ public class ShulkerBoxBlockEntity extends RandomizableContainerBlockEntity impl
+                 while (iterator.hasNext()) {
+                     Entity entity = (Entity) iterator.next();
+ 
+-                    if (entity.getPistonPushReaction() != PushReaction.IGNORE) {
++                    if (entity.getPistonPushReaction() != PushReaction.IGNORE  && !(entity instanceof Player player && player.isCreativeFlyOrSpectator())) { // SlimyPurpur - creative no clip
+                         entity.move(MoverType.SHULKER_BOX, new Vec3((axisalignedbb.getXsize() + 0.01D) * (double) enumdirection.getStepX(), (axisalignedbb.getYsize() + 0.01D) * (double) enumdirection.getStepY(), (axisalignedbb.getZsize() + 0.01D) * (double) enumdirection.getStepZ()));
+                     }
+                 }
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+index 7291e4056b8e46ab59b71818388ac55fbb12993f..cb5bec5e2f9a92a8087f12d2d8a74fc442a8996e 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/TheEndGatewayBlockEntity.java
+@@ -127,7 +127,7 @@ public class TheEndGatewayBlockEntity extends TheEndPortalBlockEntity {
+     }
+ 
+     public static boolean canEntityTeleport(Entity entity) {
+-        return EntitySelector.NO_SPECTATORS.test(entity) && !entity.getRootVehicle().isOnPortalCooldown();
++        return EntitySelector.NO_SPECTATORS.test(entity) && !entity.getRootVehicle().isOnPortalCooldown() && !(entity instanceof net.minecraft.world.entity.player.Player player && player.isCreativeFlyOrSpectator()); // SlimyPurpur - creative no clip
+     }
+ 
+     public boolean isSpawning() {
+diff --git a/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java b/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
+index 1ef87580574919796dbba707f44a413ee5c5781b..07ccc6c6aa0b180413de53d11507190bf88b3a42 100644
+--- a/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
+@@ -142,7 +142,7 @@ public class PistonMovingBlockEntity extends BlockEntity {
+                                         h = (double)direction.getStepZ();
+                                 }
+ 
+-                                entity.setDeltaMovement(e, g, h);
++                                if (!(entity instanceof net.minecraft.world.entity.player.Player player) || !player.isCreativeFlyOrSpectator()) entity.setDeltaMovement(e, g, h); // SlimyPurpur - creative no clip
+                                 // Paper - EAR items stuck in in slime pushed by a piston
+                                 entity.activatedTick = Math.max(entity.activatedTick, net.minecraft.server.MinecraftServer.currentTick + 10);
+                                 entity.activatedImmunityTick = Math.max(entity.activatedImmunityTick, net.minecraft.server.MinecraftServer.currentTick + 10);
+@@ -178,6 +178,7 @@ public class PistonMovingBlockEntity extends BlockEntity {
+     }
+ 
+     private static void moveEntityByPiston(Direction direction, Entity entity, double distance, Direction movementDirection) {
++        if (entity instanceof net.minecraft.world.entity.player.Player player && player.isCreativeFlyOrSpectator()) return; // SlimyPurpur - creative no clip
+         NOCLIP.set(direction);
+         entity.move(MoverType.PISTON, new Vec3(distance * (double)movementDirection.getStepX(), distance * (double)movementDirection.getStepY(), distance * (double)movementDirection.getStepZ()));
+         NOCLIP.set((Direction)null);

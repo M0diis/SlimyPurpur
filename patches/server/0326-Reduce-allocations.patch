@@ -1,0 +1,301 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Thu, 18 Jan 2024 17:35:42 +0200
+Subject: [PATCH] Reduce allocations
+
+
+diff --git a/src/main/java/ca/spottedleaf/starlight/common/light/StarLightEngine.java b/src/main/java/ca/spottedleaf/starlight/common/light/StarLightEngine.java
+index ad1eeebe6de219143492b94da309cb54ae9e0a5b..dc2be80e26019e847b1d0ce947969835e89db6bf 100644
+--- a/src/main/java/ca/spottedleaf/starlight/common/light/StarLightEngine.java
++++ b/src/main/java/ca/spottedleaf/starlight/common/light/StarLightEngine.java
+@@ -39,6 +39,8 @@ public abstract class StarLightEngine {
+             AxisDirection.POSITIVE_Z, AxisDirection.NEGATIVE_Z
+     };
+ 
++    private static final AxisDirection[] EMPTY_DIRECTIONS = new AxisDirection[0]; // SlimyPurpur - Reduce allocations
++
+     protected static enum AxisDirection {
+ 
+         // Declaration order is important and relied upon. Do not change without modifying propagation code.
+@@ -1094,7 +1096,7 @@ public abstract class StarLightEngine {
+             for (int bitset = i, len = Integer.bitCount(i), index = 0; index < len; ++index, bitset ^= IntegerUtil.getTrailingBit(bitset)) {
+                 directions.add(AXIS_DIRECTIONS[IntegerUtil.trailingZeros(bitset)]);
+             }
+-            OLD_CHECK_DIRECTIONS[i] = directions.toArray(new AxisDirection[0]);
++            OLD_CHECK_DIRECTIONS[i] = directions.toArray(EMPTY_DIRECTIONS);
+         }
+     }
+ 
+diff --git a/src/main/java/com/destroystokyo/paper/antixray/ChunkPacketBlockControllerAntiXray.java b/src/main/java/com/destroystokyo/paper/antixray/ChunkPacketBlockControllerAntiXray.java
+index e7fe98ea30ae6d0baea3ec1f9f98a89502a49a12..1b09610b67f34adab7e1698f26867528545104d5 100644
+--- a/src/main/java/com/destroystokyo/paper/antixray/ChunkPacketBlockControllerAntiXray.java
++++ b/src/main/java/com/destroystokyo/paper/antixray/ChunkPacketBlockControllerAntiXray.java
+@@ -97,8 +97,8 @@ public final class ChunkPacketBlockControllerAntiXray extends ChunkPacketBlockCo
+             Set<BlockState> presetBlockStateSet = new LinkedHashSet<>();
+             // Therefore addAll(Collection<? extends E>) is used, which guarantees this order in the doc
+             presetBlockStateSet.addAll(presetBlockStateList);
+-            presetBlockStates = presetBlockStateSet.isEmpty() ? new BlockState[]{Blocks.DIAMOND_ORE.defaultBlockState()} : presetBlockStateSet.toArray(new BlockState[0]);
+-            presetBlockStatesFull = presetBlockStateSet.isEmpty() ? new BlockState[]{Blocks.DIAMOND_ORE.defaultBlockState()} : presetBlockStateList.toArray(new BlockState[0]);
++            presetBlockStates = presetBlockStateSet.isEmpty() ? new BlockState[]{Blocks.DIAMOND_ORE.defaultBlockState()} : me.m0dii.slimypurpur.server.util.Constants.ZERO_BLOCK_STATE_ARRAY; // SlimyPurpur - Reduce allocations
++            presetBlockStatesFull = presetBlockStateSet.isEmpty() ? new BlockState[]{Blocks.DIAMOND_ORE.defaultBlockState()} : me.m0dii.slimypurpur.server.util.Constants.ZERO_BLOCK_STATE_ARRAY; // SlimyPurpur - Reduce allocations
+             presetBlockStatesStone = null;
+             presetBlockStatesDeepslate = null;
+             presetBlockStatesNetherrack = null;
+diff --git a/src/main/java/io/papermc/paper/command/subcommands/VersionCommand.java b/src/main/java/io/papermc/paper/command/subcommands/VersionCommand.java
+index ae60bd96b5284d54676d8e7e4dd5d170b526ec1e..06c6959246c76b082f1187996cd5814de20de11b 100644
+--- a/src/main/java/io/papermc/paper/command/subcommands/VersionCommand.java
++++ b/src/main/java/io/papermc/paper/command/subcommands/VersionCommand.java
+@@ -14,7 +14,7 @@ public final class VersionCommand implements PaperSubcommand {
+     public boolean execute(final CommandSender sender, final String subCommand, final String[] args) {
+         final @Nullable Command ver = MinecraftServer.getServer().server.getCommandMap().getCommand("version");
+         if (ver != null) {
+-            ver.execute(sender, "paper", new String[0]);
++            ver.execute(sender, "paper", me.m0dii.slimypurpur.server.util.Constants.EMPTY_STRING_ARRAY);
+         }
+         return true;
+     }
+diff --git a/src/main/java/io/papermc/paper/util/CollisionUtil.java b/src/main/java/io/papermc/paper/util/CollisionUtil.java
+index bfb1de19f53d5d7c7b65e25a606fabfa416706b3..6c47e2594f61e8d7e4a2f7e00a2746ce57f392e0 100644
+--- a/src/main/java/io/papermc/paper/util/CollisionUtil.java
++++ b/src/main/java/io/papermc/paper/util/CollisionUtil.java
+@@ -4,7 +4,6 @@ import io.papermc.paper.util.collisions.CachedShapeData;
+ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+ import it.unimi.dsi.fastutil.doubles.DoubleList;
+ import net.minecraft.core.BlockPos;
+-import net.minecraft.core.Direction;
+ import net.minecraft.server.level.ServerChunkCache;
+ import net.minecraft.util.Mth;
+ import net.minecraft.world.entity.Entity;
+@@ -26,12 +25,10 @@ import net.minecraft.world.phys.shapes.ArrayVoxelShape;
+ import net.minecraft.world.phys.shapes.BitSetDiscreteVoxelShape;
+ import net.minecraft.world.phys.shapes.BooleanOp;
+ import net.minecraft.world.phys.shapes.CollisionContext;
+-import net.minecraft.world.phys.shapes.DiscreteVoxelShape;
+ import net.minecraft.world.phys.shapes.EntityCollisionContext;
+ import net.minecraft.world.phys.shapes.OffsetDoubleList;
+ import net.minecraft.world.phys.shapes.Shapes;
+ import net.minecraft.world.phys.shapes.VoxelShape;
+-import java.util.Arrays;
+ import java.util.List;
+ import java.util.function.BiPredicate;
+ import java.util.function.Predicate;
+@@ -1149,7 +1146,7 @@ public final class CollisionUtil {
+         }
+ 
+         private static final MergedVoxelCoordinateList EMPTY = new MergedVoxelCoordinateList(
+-                new double[] { 0.0 }, 0.0, new int[0], new int[0], 0
++                me.m0dii.slimypurpur.server.util.Constants.ONE_DOUBLE_ARRAY, 0.0, me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY, me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY, 0 // SlimyPurpur - Reduce allocations
+         );
+ 
+         private static int[] getIndices(final int length) {
+diff --git a/src/main/java/io/papermc/paper/world/ChunkEntitySlices.java b/src/main/java/io/papermc/paper/world/ChunkEntitySlices.java
+index 7e8dc9e8f381abfdcce2746edc93122d623622d1..b973a2f5f9eccdbef6813e0ecef78a21b562496b 100644
+--- a/src/main/java/io/papermc/paper/world/ChunkEntitySlices.java
++++ b/src/main/java/io/papermc/paper/world/ChunkEntitySlices.java
+@@ -2,11 +2,9 @@ package io.papermc.paper.world;
+ 
+ import com.destroystokyo.paper.util.maplist.EntityList;
+ import io.papermc.paper.chunk.system.entity.EntityLookup;
+-import io.papermc.paper.util.TickThread;
+ import it.unimi.dsi.fastutil.objects.Reference2ObjectMap;
+ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
+ import net.minecraft.nbt.CompoundTag;
+-import net.minecraft.server.level.ChunkHolder;
+ import net.minecraft.server.level.FullChunkStatus;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.util.Mth;
+@@ -303,7 +301,7 @@ public final class ChunkEntitySlices {
+ 
+     protected static final class BasicEntityList<E extends Entity> {
+ 
+-        protected static final Entity[] EMPTY = new Entity[0];
++        protected static final Entity[] EMPTY = me.m0dii.slimypurpur.server.util.Constants.ZERO_ENTITY_ARRAY;
+         protected static final int DEFAULT_CAPACITY = 4;
+ 
+         protected E[] storage;
+diff --git a/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+index 3bddde540b990b65e49fea7a4acfd91c2077f9c1..156a9e6fe0a10b14130395e4c411fa2d07efa0e1 100644
+--- a/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
++++ b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+@@ -1,8 +1,22 @@
+ package me.m0dii.slimypurpur.server.util;
+ 
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.level.block.state.BlockState;
++
+ public final class Constants {
+     public static final int[] ZERO_ARRAY = new int[]{0};
+-    public static final int[] EMPTY_ARRAY = new int[0];
++    public static final int[] EMPTY_INT_ARRAY = new int[0];
+     public static final int[] ONE_ARRAY = new int[]{1};
+     public static final int[] TWO_ARRAY = new int[]{2};
++
++    public static final double[] ONE_DOUBLE_ARRAY = new double[] { 0.0 };
++
++    public static final BlockState[] ZERO_BLOCK_STATE_ARRAY = new BlockState[0];
++    public static final Entity[] ZERO_ENTITY_ARRAY = new Entity[0];
++
++    public static final String[] EMPTY_STRING_ARRAY = new String[0];
++
++    public static final byte[] ZERO_BYTE_ARRAY = new byte[0];
++
++    public static final long[] ZERO_LONG_ARRAY = new long[0];
+ }
+diff --git a/src/main/java/net/minecraft/nbt/CompoundTag.java b/src/main/java/net/minecraft/nbt/CompoundTag.java
+index 84fc2adf591f02a14862f7c1cd645c2efde55c3d..a90b31f373a9b0ff68a87ed20e36b482ad30645e 100644
+--- a/src/main/java/net/minecraft/nbt/CompoundTag.java
++++ b/src/main/java/net/minecraft/nbt/CompoundTag.java
+@@ -1,6 +1,5 @@
+ package net.minecraft.nbt;
+ 
+-import com.google.common.collect.Maps;
+ import com.mojang.serialization.Codec;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.Dynamic;
+@@ -416,7 +415,7 @@ public class CompoundTag implements Tag {
+             throw new ReportedException(this.createReport(key, ByteArrayTag.TYPE, var3));
+         }
+ 
+-        return new byte[0];
++        return me.m0dii.slimypurpur.server.util.Constants.ZERO_BYTE_ARRAY; // SlimyPurpur - Reduce allocations
+     }
+ 
+     public int[] getIntArray(String key) {
+@@ -428,7 +427,7 @@ public class CompoundTag implements Tag {
+             throw new ReportedException(this.createReport(key, IntArrayTag.TYPE, var3));
+         }
+ 
+-        return new int[0];
++        return me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY; // SlimyPurpur - Reduce allocations
+     }
+ 
+     public long[] getLongArray(String key) {
+@@ -440,7 +439,7 @@ public class CompoundTag implements Tag {
+             throw new ReportedException(this.createReport(key, LongArrayTag.TYPE, var3));
+         }
+ 
+-        return new long[0];
++        return me.m0dii.slimypurpur.server.util.Constants.ZERO_LONG_ARRAY; // SlimyPurpur - Reduce allocations
+     }
+ 
+     public CompoundTag getCompound(String key) {
+diff --git a/src/main/java/net/minecraft/server/MinecraftServer.java b/src/main/java/net/minecraft/server/MinecraftServer.java
+index 58a6cc3211417e6915d7677fcddedac8f1feb9dc..030917d408696bb4ca714100f5c85af0ac318d07 100644
+--- a/src/main/java/net/minecraft/server/MinecraftServer.java
++++ b/src/main/java/net/minecraft/server/MinecraftServer.java
+@@ -1353,13 +1353,17 @@ public abstract class MinecraftServer extends ReentrantBlockableEventLoop<TickTa
+     }
+ 
+     private Optional<ServerStatus.Favicon> loadStatusIcon() {
+-        Optional<Path> optional = Optional.of(this.getFile("server-icon.png").toPath()).filter((path) -> {
+-            return Files.isRegularFile(path, new LinkOption[0]);
+-        }).or(() -> {
+-            return this.storageSource.getIconFile().filter((path) -> {
+-                return Files.isRegularFile(path, new LinkOption[0]);
+-            });
+-        });
++        // SlimyPurpur start - Reduce allocations
++        // Optional<Path> optional = Optional.of(this.getFile("server-icon.png").toPath()).filter((path) -> {
++        //     return Files.isRegularFile(path, new LinkOption[0]);
++        // }).or(() -> {
++        //     return this.storageSource.getIconFile().filter((path) -> {
++        //         return Files.isRegularFile(path, new LinkOption[0]);
++        //     });
++        // });
++        Optional<Path> optional = Optional.of(this.getFile("server-icon.png").toPath()).filter(Files::isRegularFile)
++            .or(() -> this.storageSource.getIconFile().filter(Files::isRegularFile));
++        // SlimyPurpur end
+ 
+         return optional.flatMap((path) -> {
+             try {
+diff --git a/src/main/java/net/minecraft/server/PlayerAdvancements.java b/src/main/java/net/minecraft/server/PlayerAdvancements.java
+index 533a348acb53c8e7590f3d81c19e53a655101713..9742c98d574873d63c534bd57a2c99e04ef2696d 100644
+--- a/src/main/java/net/minecraft/server/PlayerAdvancements.java
++++ b/src/main/java/net/minecraft/server/PlayerAdvancements.java
+@@ -131,7 +131,7 @@ public class PlayerAdvancements {
+     }
+ 
+     private void load(ServerAdvancementManager advancementLoader) {
+-        if (Files.isRegularFile(this.playerSavePath, new LinkOption[0])) {
++        if (Files.isRegularFile(this.playerSavePath /*,new LinkOption[0]*/)) { // SlimyPurpur - Reduce allocations
+             try {
+                 JsonReader jsonreader = new JsonReader(Files.newBufferedReader(this.playerSavePath, StandardCharsets.UTF_8));
+ 
+diff --git a/src/main/java/net/minecraft/server/players/StoredUserList.java b/src/main/java/net/minecraft/server/players/StoredUserList.java
+index 09fc086548b9d0f97849f56f41e3a5be87f5091a..5807d6861e5ee04e6bef76f6c56d1657ea4a30dd 100644
+--- a/src/main/java/net/minecraft/server/players/StoredUserList.java
++++ b/src/main/java/net/minecraft/server/players/StoredUserList.java
+@@ -1,7 +1,6 @@
+ // mc-dev import
+ package net.minecraft.server.players;
+ 
+-import com.google.common.collect.Lists;
+ import com.google.common.collect.Maps;
+ import com.google.common.io.Files;
+ import com.google.gson.Gson;
+@@ -96,7 +95,7 @@ public abstract class StoredUserList<K, V extends StoredUserEntry<K>> {
+     }
+ 
+     public String[] getUserList() {
+-        return (String[]) this.map.keySet().toArray(new String[0]);
++        return (String[]) this.map.keySet().toArray(me.m0dii.slimypurpur.server.util.Constants.EMPTY_STRING_ARRAY); // SlimyPurpur - Reduce allocations
+     }
+ 
+     public boolean isEmpty() {
+diff --git a/src/main/java/net/minecraft/world/item/crafting/ShapedRecipe.java b/src/main/java/net/minecraft/world/item/crafting/ShapedRecipe.java
+index 17bef91546fa85d401b263c3a69fbf464f290eca..e52a796e423823aca1df25a4abf10c34e590f5cf 100644
+--- a/src/main/java/net/minecraft/world/item/crafting/ShapedRecipe.java
++++ b/src/main/java/net/minecraft/world/item/crafting/ShapedRecipe.java
+@@ -226,7 +226,7 @@ public class ShapedRecipe extends io.papermc.paper.inventory.recipe.RecipeBookEx
+         }
+ 
+         if (pattern.size() == l) {
+-            return new String[0];
++            return me.m0dii.slimypurpur.server.util.Constants.EMPTY_STRING_ARRAY; // SlimyPurpur - Reduce allocations
+         } else {
+             String[] astring = new String[pattern.size() - l - k];
+ 
+diff --git a/src/main/java/net/minecraft/world/level/block/ComposterBlock.java b/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
+index f8c58b699522c33723a5836f65c276320b356833..e58be86f18c545203065726a4a19bcffdf66c23a 100644
+--- a/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/ComposterBlock.java
+@@ -443,7 +443,7 @@ public class ComposterBlock extends Block implements WorldlyContainerHolder {
+ 
+         @Override
+         public int[] getSlotsForFace(Direction side) {
+-            return side == Direction.DOWN ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_ARRAY; // SlimyPurpur - avoid array allocation
++            return side == Direction.DOWN ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY; // SlimyPurpur - avoid array allocation
+         }
+ 
+         @Override
+@@ -492,7 +492,7 @@ public class ComposterBlock extends Block implements WorldlyContainerHolder {
+ 
+         @Override
+         public int[] getSlotsForFace(Direction side) {
+-            return side == Direction.UP ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_ARRAY; // SlimyPurpur - avoid array allocation
++            return side == Direction.UP ? me.m0dii.slimypurpur.server.util.Constants.ZERO_ARRAY : me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY; // SlimyPurpur - avoid array allocation
+         }
+ 
+         @Override
+@@ -534,7 +534,7 @@ public class ComposterBlock extends Block implements WorldlyContainerHolder {
+ 
+         @Override
+         public int[] getSlotsForFace(Direction side) {
+-            return new int[0];
++            return me.m0dii.slimypurpur.server.util.Constants.EMPTY_INT_ARRAY; // SlimyPurpur - avoid array allocation
+         }
+ 
+         @Override
+diff --git a/src/main/java/org/purpurmc/purpur/command/PurpurCommand.java b/src/main/java/org/purpurmc/purpur/command/PurpurCommand.java
+index 2621e54879e9ab0029a875f1d09eee67878b90d5..543e6f6d6ade820e2c1dc214a839566c7494072f 100644
+--- a/src/main/java/org/purpurmc/purpur/command/PurpurCommand.java
++++ b/src/main/java/org/purpurmc/purpur/command/PurpurCommand.java
+@@ -57,7 +57,7 @@ public class PurpurCommand extends Command {
+         } else if (args[0].equalsIgnoreCase("version")) {
+             Command verCmd = org.bukkit.Bukkit.getServer().getCommandMap().getCommand("version");
+             if (verCmd != null) {
+-                return verCmd.execute(sender, commandLabel, new String[0]);
++                return verCmd.execute(sender, commandLabel, me.m0dii.slimypurpur.server.util.Constants.EMPTY_STRING_ARRAY);
+             }
+         }
+ 
