@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Fri, 19 Jan 2024 22:05:07 +0200
+Subject: [PATCH] Optimize player list ticks
+
+
+diff --git a/src/main/java/net/minecraft/server/players/PlayerList.java b/src/main/java/net/minecraft/server/players/PlayerList.java
+index 0cb553ec08a67138dfa87aa98b1a6a4becf7ac80..8bde6a5e756b1c84878d1d30712527ff18449432 100644
+--- a/src/main/java/net/minecraft/server/players/PlayerList.java
++++ b/src/main/java/net/minecraft/server/players/PlayerList.java
+@@ -1060,19 +1060,23 @@ public abstract class PlayerList {
+         // SlimyPurpur start - spread out sending all player info
+         ServerPlayer[] sendAllPlayerInfoBucket = this.sendAllPlayerInfoBuckets[this.sendAllPlayerInfoIn];
+         if (sendAllPlayerInfoBucket != null) {
+-            for (ServerPlayer target : sendAllPlayerInfoBucket) {
++            for (ServerPlayer targetPlayer : sendAllPlayerInfoBucket) {
+                 // SlimyPurpur end - spread out sending all player info
+ 
+-                target.connection.send(new ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY), this.players.stream().filter(new Predicate<ServerPlayer>() {
+-                    @Override
+-                    public boolean test(ServerPlayer input) {
+-                        return target.getBukkitEntity().canSee(input.getBukkitEntity());
++                var target = targetPlayer.getBukkitEntity();
++
++                final List<ServerPlayer> list = new java.util.ArrayList<>(this.players.size());
++                for (ServerPlayer player : this.players) {
++                    if (target.canSee(player.getUUID())) {
++                        list.add(player);
+                     }
+-                }).collect(Collectors.toList())));
++                }
++
++                target.getHandle().connection.send(new ClientboundPlayerInfoUpdatePacket(EnumSet.of(ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY), list));
+             }
+         }
+         if (++this.sendAllPlayerInfoIn >= SEND_PLAYER_INFO_INTERVAL) {
+-            // SlimyPurpur - spread out sending all player info
++            // SlimyPurpur end - spread out sending all player info
+             this.sendAllPlayerInfoIn = 0;
+         }
+     }

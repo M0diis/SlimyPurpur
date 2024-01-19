@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Fri, 19 Jan 2024 10:49:59 +0200
+Subject: [PATCH] Disable timings by default
+
+
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+index a6f58b3457b7477015c5c6d969e7d83017dd3fa1..98a0d07650afaf6b117150abdaa3bf83e071220c 100644
+--- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -95,7 +95,7 @@ public class GlobalConfiguration extends ConfigurationPart {
+ 
+     @Deprecated(forRemoval = true)
+     public class Timings extends ConfigurationPart {
+-        public boolean enabled = true;
++        public boolean enabled = false; // SlimyPurpur - disable timings by default
+         public boolean verbose = true;
+         public String url = "https://timings.aikar.co/";
+         public boolean serverNamePrivacy = false;

@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Fri, 19 Jan 2024 11:02:12 +0200
+Subject: [PATCH] Reduce allocations v2
+
+
+diff --git a/src/main/java/com/destroystokyo/paper/util/maplist/IBlockDataList.java b/src/main/java/com/destroystokyo/paper/util/maplist/IBlockDataList.java
+index 277cfd9d1e8fff5d9b5e534b75c3c5162d58b0b7..4bfd2ab15fd66ceddece01f4b4bcda981858b665 100644
+--- a/src/main/java/com/destroystokyo/paper/util/maplist/IBlockDataList.java
++++ b/src/main/java/com/destroystokyo/paper/util/maplist/IBlockDataList.java
+@@ -20,7 +20,7 @@ public final class IBlockDataList {
+         this.map.defaultReturnValue(Long.MAX_VALUE);
+     }
+ 
+-    private static final long[] EMPTY_LIST = new long[0];
++    private static final long[] EMPTY_LIST = me.m0dii.slimypurpur.server.util.Constants.ZERO_LONG_ARRAY; // SlimyPurpur - Reduce allocations
+ 
+     private long[] byIndex = EMPTY_LIST;
+     private int size;
+diff --git a/src/main/java/io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java b/src/main/java/io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java
+index f975cb93716e137d973ff2f9011acdbef58859a2..94e7cae92c4883723d2895aa6b02884840f8e4fe 100644
+--- a/src/main/java/io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java
++++ b/src/main/java/io/papermc/paper/chunk/system/scheduling/ChunkTaskScheduler.java
+@@ -851,7 +851,7 @@ public final class ChunkTaskScheduler {
+ 
+     public static ChunkInfo[] getChunkInfos() {
+         synchronized (WAITING_CHUNKS) {
+-            return WAITING_CHUNKS.toArray(new ChunkInfo[0]);
++            return WAITING_CHUNKS.toArray(me.m0dii.slimypurpur.server.util.Constants.ZERO_CHUNK_INFO_ARRAY); // SlimyPurpur - Reduce allocations
+         }
+     }
+ 
+diff --git a/src/main/java/io/papermc/paper/plugin/manager/PaperPluginInstanceManager.java b/src/main/java/io/papermc/paper/plugin/manager/PaperPluginInstanceManager.java
+index 08b1aab5d37a56dc42542ce15ba1f7ccd1b08400..698c2821cedde282e0f4c7b3fcb17ee8e0b1f9a1 100644
+--- a/src/main/java/io/papermc/paper/plugin/manager/PaperPluginInstanceManager.java
++++ b/src/main/java/io/papermc/paper/plugin/manager/PaperPluginInstanceManager.java
+@@ -69,7 +69,7 @@ class PaperPluginInstanceManager {
+     }
+ 
+     public @NotNull Plugin[] getPlugins() {
+-        return this.plugins.toArray(new Plugin[0]);
++        return this.plugins.toArray(me.m0dii.slimypurpur.server.util.Constants.ZERO_PLUGIN_ARRAY); // SlimyPurpur - Reduce allocations
+     }
+ 
+     public boolean isPluginEnabled(@NotNull String name) {
+diff --git a/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+index 156a9e6fe0a10b14130395e4c411fa2d07efa0e1..22f8ca880b26049271bdbb6ba41ddc6ebdcfde8e 100644
+--- a/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
++++ b/src/main/java/me/m0dii/slimypurpur/server/util/Constants.java
+@@ -1,7 +1,10 @@
+ package me.m0dii.slimypurpur.server.util;
+ 
++import io.papermc.paper.chunk.system.scheduling.ChunkTaskScheduler;
+ import net.minecraft.world.entity.Entity;
++import net.minecraft.world.item.crafting.Ingredient;
+ import net.minecraft.world.level.block.state.BlockState;
++import org.bukkit.plugin.Plugin;
+ 
+ public final class Constants {
+     public static final int[] ZERO_ARRAY = new int[]{0};
+@@ -13,6 +16,10 @@ public final class Constants {
+ 
+     public static final BlockState[] ZERO_BLOCK_STATE_ARRAY = new BlockState[0];
+     public static final Entity[] ZERO_ENTITY_ARRAY = new Entity[0];
++    public static final Ingredient[] ZERO_INGREDIENT_ARRAY = new Ingredient[0];
++    public static final ChunkTaskScheduler.ChunkInfo[] ZERO_CHUNK_INFO_ARRAY = new ChunkTaskScheduler.ChunkInfo[0];
++    public static final Plugin[] ZERO_PLUGIN_ARRAY = new Plugin[0];
++    public static final Class[] ZERO_CLASS_ARRAY = new Class[0];
+ 
+     public static final String[] EMPTY_STRING_ARRAY = new String[0];
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/animal/Bee.java b/src/main/java/net/minecraft/world/entity/animal/Bee.java
+index 38a3dcec138d9233a46e5d523bcc6d64bc7fffd0..6574c2cab530ff565fd60c5651ed39fe82e4da55 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/Bee.java
++++ b/src/main/java/net/minecraft/world/entity/animal/Bee.java
+@@ -251,7 +251,7 @@ public class Bee extends Animal implements NeutralMob, FlyingAnimal {
+         this.goalSelector.addGoal(8, new Bee.BeeWanderGoal());
+         this.goalSelector.addGoal(9, new FloatGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, (new Bee.BeeHurtByOtherGoal(this)).setAlertOthers(new Class[0]));
++        this.targetSelector.addGoal(1, (new Bee.BeeHurtByOtherGoal(this)).setAlertOthers(me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new Bee.BeeBecomeAngryTargetGoal(this));
+         this.targetSelector.addGoal(3, new ResetUniversalAngerTargetGoal<>(this, true));
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/animal/IronGolem.java b/src/main/java/net/minecraft/world/entity/animal/IronGolem.java
+index 64aba511e615983988cdb6a0fd45b7d9d4f2f16d..9be1731d0fb917b099dd21f47866c3f1e11a9524 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/IronGolem.java
++++ b/src/main/java/net/minecraft/world/entity/animal/IronGolem.java
+@@ -122,7 +122,7 @@ public class IronGolem extends AbstractGolem implements NeutralMob {
+         this.goalSelector.addGoal(8, new RandomLookAroundGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+         this.targetSelector.addGoal(1, new DefendVillageTargetGoal(this));
+-        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::isAngryAt));
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Mob.class, 5, false, false, (entityliving) -> {
+             return entityliving instanceof Enemy && !(entityliving instanceof Creeper);
+diff --git a/src/main/java/net/minecraft/world/entity/animal/Panda.java b/src/main/java/net/minecraft/world/entity/animal/Panda.java
+index 97c38b72b998bdf397c72d3ea08fd93186585f30..74f5388b0835ae17052c7eefdb8344e776db2756 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/Panda.java
++++ b/src/main/java/net/minecraft/world/entity/animal/Panda.java
+@@ -339,7 +339,7 @@ public class Panda extends Animal {
+         this.goalSelector.addGoal(13, new FollowParentGoal(this, 1.25D));
+         this.goalSelector.addGoal(14, new WaterAvoidingRandomStrollGoal(this, 1.0D));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, (new Panda.PandaHurtByTargetGoal(this, new Class[0])).setAlertOthers(new Class[0]));
++        this.targetSelector.addGoal(1, (new Panda.PandaHurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)).setAlertOthers(me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+     }
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+diff --git a/src/main/java/net/minecraft/world/entity/animal/Rabbit.java b/src/main/java/net/minecraft/world/entity/animal/Rabbit.java
+index eae2488f2a46e543b496b7a2919aabbb55dcb825..e9cb12e945a125b501862b3cdd540ebdc514fcab 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/Rabbit.java
++++ b/src/main/java/net/minecraft/world/entity/animal/Rabbit.java
+@@ -461,7 +461,7 @@ public class Rabbit extends Animal implements VariantHolder<Rabbit.Variant> {
+         if (variant == Rabbit.Variant.EVIL) {
+             this.getAttribute(Attributes.ARMOR).setBaseValue(8.0D);
+             this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.4D, true));
+-            this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[0])).setAlertOthers());
++            this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)).setAlertOthers()); // SlimyPurpur - Reduce allocations
+             this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+             this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Wolf.class, true));
+             if (!this.hasCustomName()) {
+diff --git a/src/main/java/net/minecraft/world/entity/animal/Wolf.java b/src/main/java/net/minecraft/world/entity/animal/Wolf.java
+index 5d49ed7ddf44a3d549b178ae548664194967776b..d46422ae634272484abe1fe202f13a85899cd1b9 100644
+--- a/src/main/java/net/minecraft/world/entity/animal/Wolf.java
++++ b/src/main/java/net/minecraft/world/entity/animal/Wolf.java
+@@ -241,7 +241,7 @@ public class Wolf extends TamableAnimal implements NeutralMob {
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+         this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this));
+         this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this));
+-        this.targetSelector.addGoal(3, (new HurtByTargetGoal(this, new Class[0])).setAlertOthers());
++        this.targetSelector.addGoal(3, (new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)).setAlertOthers()); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, Player.class, 10, true, false, this::isAngryAt));
+         // this.targetSelector.addGoal(5, new NonTameRandomTargetGoal<>(this, Animal.class, false, Wolf.PREY_SELECTOR)); // Purpur - moved to updatePathfinders()
+         this.targetSelector.addGoal(6, new NonTameRandomTargetGoal<>(this, Turtle.class, false, Turtle.BABY_ON_LAND_SELECTOR));
+diff --git a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+index 351f7613f3f0234fe92654a20996222fc43e39ac..dc620919937cb5c3448f48961c0a7a28788fe1df 100644
+--- a/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
++++ b/src/main/java/net/minecraft/world/entity/boss/wither/WitherBoss.java
+@@ -254,7 +254,7 @@ public class WitherBoss extends Monster implements PowerableMob, RangedAttackMob
+         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(7, new RandomLookAroundGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, LivingEntity.class, 0, false, false, WitherBoss.LIVING_ENTITY_SELECTOR));
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+index aa853aa75ed0bb162ddc3ec04472db74dc77d4dd..0c672f12260f0906980fbd34eb785eff5fc69a32 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
++++ b/src/main/java/net/minecraft/world/entity/monster/AbstractSkeleton.java
+@@ -79,7 +79,7 @@ public abstract class AbstractSkeleton extends Monster implements RangedAttackMo
+         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolem.class, true));
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Turtle.class, 10, true, false, Turtle.BABY_ON_LAND_SELECTOR));
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Creeper.java b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+index 304ea7fdcd410a7c88ec61143364e14de8db0b0c..87262d7d28035ec5973c406f6c346ed53152c761 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Creeper.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Creeper.java
+@@ -153,7 +153,7 @@ public class Creeper extends Monster implements PowerableMob {
+         this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+         this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
+-        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+     }
+ 
+     public static AttributeSupplier.Builder createAttributes() {
+diff --git a/src/main/java/net/minecraft/world/entity/monster/EnderMan.java b/src/main/java/net/minecraft/world/entity/monster/EnderMan.java
+index 4c9ffa8e1ab97d8156ead0ed189c769ffd9b4aae..a9f11517b88539716f57ff0ffb733c0046ca7f7d 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/EnderMan.java
++++ b/src/main/java/net/minecraft/world/entity/monster/EnderMan.java
+@@ -138,7 +138,7 @@ public class EnderMan extends Monster implements NeutralMob {
+         this.goalSelector.addGoal(11, new EnderMan.EndermanTakeBlockGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+         this.targetSelector.addGoal(1, new EnderMan.EndermanLookForPlayerGoal(this, this::isAngryAt));
+-        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(2, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, Endermite.class, 10, true, false, (entityliving) -> entityliving.level().purpurConfig.endermanAggroEndermites && entityliving instanceof Endermite endermite && (!entityliving.level().purpurConfig.endermanAggroEndermitesOnlyIfPlayerSpawned || endermite.isPlayerSpawned()))); // Purpur
+         this.targetSelector.addGoal(4, new ResetUniversalAngerTargetGoal<>(this, false));
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Silverfish.java b/src/main/java/net/minecraft/world/entity/monster/Silverfish.java
+index dbc27afbccb027963ae3f035c268835adedbb933..250c43b6ec8c92b54a3523ddb45b739b14266164 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Silverfish.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Silverfish.java
+@@ -89,7 +89,7 @@ public class Silverfish extends Monster {
+         this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.0D, false));
+         this.goalSelector.addGoal(5, new Silverfish.SilverfishMergeWithStoneGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[0])).setAlertOthers());
++        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)).setAlertOthers()); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Spider.java b/src/main/java/net/minecraft/world/entity/monster/Spider.java
+index 43ce5ffc6fc1853875f446b543d5b57502a21dc7..873d29fc06a504ccfed67c596dc6f4bed6dfc307 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Spider.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Spider.java
+@@ -95,7 +95,7 @@ public class Spider extends Monster {
+         this.goalSelector.addGoal(6, new LookAtPlayerGoal(this, Player.class, 8.0F));
+         this.goalSelector.addGoal(6, new RandomLookAroundGoal(this));
+         this.targetSelector.addGoal(0, new org.purpurmc.purpur.entity.ai.HasRider(this)); // Purpur
+-        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, new Class[0]));
++        this.targetSelector.addGoal(1, new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new Spider.SpiderTargetGoal<>(this, Player.class));
+         this.targetSelector.addGoal(3, new Spider.SpiderTargetGoal<>(this, IronGolem.class));
+     }
+diff --git a/src/main/java/net/minecraft/world/entity/monster/Zombie.java b/src/main/java/net/minecraft/world/entity/monster/Zombie.java
+index e81499a882745ac6493978446921264ba46cf064..77be97ce776ac82bd05665be1445d6f717e0bebf 100644
+--- a/src/main/java/net/minecraft/world/entity/monster/Zombie.java
++++ b/src/main/java/net/minecraft/world/entity/monster/Zombie.java
+@@ -166,7 +166,7 @@ public class Zombie extends Monster {
+         this.goalSelector.addGoal(2, new ZombieAttackGoal(this, 1.0D, false));
+         this.goalSelector.addGoal(6, new MoveThroughVillageGoal(this, 1.0D, true, 4, this::canBreakDoors));
+         this.goalSelector.addGoal(7, new WaterAvoidingRandomStrollGoal(this, 1.0D));
+-        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, new Class[0])).setAlertOthers(ZombifiedPiglin.class));
++        this.targetSelector.addGoal(1, (new HurtByTargetGoal(this, me.m0dii.slimypurpur.server.util.Constants.ZERO_CLASS_ARRAY)).setAlertOthers(ZombifiedPiglin.class)); // SlimyPurpur - Reduce allocations
+         this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, Player.class, true));
+         // Purpur start
+         if ( this.level().spigotConfig.zombieAggressiveTowardsVillager ) this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillager.class, false) { // Spigot
+diff --git a/src/main/java/net/minecraft/world/item/crafting/ShapelessRecipe.java b/src/main/java/net/minecraft/world/item/crafting/ShapelessRecipe.java
+index 252fc22844682c0f67dc02a87478e01e49b6430d..ab7c20efb1be191d20fdb58d63f19c96a7fd8d88 100644
+--- a/src/main/java/net/minecraft/world/item/crafting/ShapelessRecipe.java
++++ b/src/main/java/net/minecraft/world/item/crafting/ShapelessRecipe.java
+@@ -84,7 +84,7 @@ public class ShapelessRecipe extends io.papermc.paper.inventory.recipe.RecipeBoo
+     public boolean matches(CraftingContainer inventory, Level world) {
+         // Pufferfish start
+         if (!this.isBukkit) {
+-            java.util.List<Ingredient> ingredients = com.google.common.collect.Lists.newArrayList(this.ingredients.toArray(new Ingredient[0]));
++            java.util.List<Ingredient> ingredients = com.google.common.collect.Lists.newArrayList(this.ingredients.toArray(me.m0dii.slimypurpur.server.util.Constants.ZERO_INGREDIENT_ARRAY)); // SlimyPurpur - Reduce allocations
+ 
+             inventory: for (int index = 0; index < inventory.getContainerSize(); index++) {
+                 ItemStack itemStack = inventory.getItem(index);

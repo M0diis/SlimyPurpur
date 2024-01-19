@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Fri, 19 Jan 2024 11:10:45 +0200
+Subject: [PATCH] Reduce block destruction packet allocations
+
+
+diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
+index 2fcebcc1c313ac5424510378e3616b75fc32c00d..8560ce3713a2359f95643950eba6538b43c21fa1 100644
+--- a/src/main/java/net/minecraft/server/level/ServerLevel.java
++++ b/src/main/java/net/minecraft/server/level/ServerLevel.java
+@@ -1844,7 +1844,16 @@ public class ServerLevel extends Level implements WorldGenLevel {
+ 
+     @Override
+     public void destroyBlockProgress(int entityId, BlockPos pos, int progress) {
+-        Iterator iterator = this.server.getPlayerList().getPlayers().iterator();
++        // SlimyPurpur start - reduce block destruction packet allocations
++        var players = this.server.getPlayerList().getPlayers();
++        if (players.isEmpty()) {
++            return;
++        }
++
++        ClientboundBlockDestructionPacket packet = new ClientboundBlockDestructionPacket(entityId, pos, progress);
++
++        Iterator iterator = players.iterator();
++        // SlimyPurpur end - reduce block destruction packet allocations
+ 
+         // CraftBukkit start
+         Player entityhuman = null;
+@@ -1867,7 +1876,7 @@ public class ServerLevel extends Level implements WorldGenLevel {
+                 // CraftBukkit end
+ 
+                 if (d0 * d0 + d1 * d1 + d2 * d2 < 1024.0D) {
+-                    entityplayer.connection.send(new ClientboundBlockDestructionPacket(entityId, pos, progress));
++                    entityplayer.connection.send(packet);
+                 }
+             }
+         }
