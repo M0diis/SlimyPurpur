@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Sat, 20 Jan 2024 15:15:05 +0200
+Subject: [PATCH] Cache CubeVoxelShape shape array
+
+
+diff --git a/src/main/java/net/minecraft/world/phys/shapes/CubeVoxelShape.java b/src/main/java/net/minecraft/world/phys/shapes/CubeVoxelShape.java
+index 110405e6e70d980d3e09f04d79562b32a7413071..9088f6ba7409845edcf2bb11c95217616f5ba1b0 100644
+--- a/src/main/java/net/minecraft/world/phys/shapes/CubeVoxelShape.java
++++ b/src/main/java/net/minecraft/world/phys/shapes/CubeVoxelShape.java
+@@ -3,8 +3,12 @@ package net.minecraft.world.phys.shapes;
+ import it.unimi.dsi.fastutil.doubles.DoubleList;
+ import net.minecraft.core.Direction;
+ import net.minecraft.util.Mth;
++import org.jetbrains.annotations.NotNull;
++import org.jetbrains.annotations.Nullable;
+ 
+ public final class CubeVoxelShape extends VoxelShape {
++    private @NotNull DoubleList @Nullable [] list; // SlimyPurpur - Lithium - cache CubeVoxelShape shape array
++
+     protected CubeVoxelShape(DiscreteVoxelShape voxels) {
+         super(voxels);
+         this.initCache(); // Paper - optimise collisions
+@@ -12,7 +16,15 @@ public final class CubeVoxelShape extends VoxelShape {
+ 
+     @Override
+     protected DoubleList getCoords(Direction.Axis axis) {
+-        return new CubePointRange(this.shape.getSize(axis));
++        // SlimyPurpur start - Lithium - cache CubeVoxelShape shape array
++        if (this.list == null) {
++            this.list = new DoubleList[Direction.Axis.VALUES.length];
++            for (Direction.Axis existingAxis : Direction.Axis.VALUES) {
++                this.list[existingAxis.ordinal()] = new CubePointRange(this.shape.getSize(axis));
++            }
++        }
++        return this.list[axis.ordinal()];
++        // SlimyPurpur end - Lithium - cache CubeVoxelShape shape array
+     }
+ 
+     @Override

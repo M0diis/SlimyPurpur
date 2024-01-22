@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Sat, 20 Jan 2024 15:12:06 +0200
+Subject: [PATCH] Linked map for entity trackers
+
+
+diff --git a/src/main/java/net/minecraft/server/level/ChunkMap.java b/src/main/java/net/minecraft/server/level/ChunkMap.java
+index ca7153e414a078b8b454dff75b99d9c7df502810..807e1c88cd04dce62d5ebdac1291f4f1f456a29c 100644
+--- a/src/main/java/net/minecraft/server/level/ChunkMap.java
++++ b/src/main/java/net/minecraft/server/level/ChunkMap.java
+@@ -14,6 +14,7 @@ import com.mojang.datafixers.util.Either;
+ import com.mojang.logging.LogUtils;
+ import com.mojang.serialization.DataResult;
+ import com.mojang.serialization.JsonOps;
++import it.unimi.dsi.fastutil.ints.Int2ObjectLinkedOpenHashMap;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+ import it.unimi.dsi.fastutil.longs.Long2ByteMap;
+@@ -252,7 +253,7 @@ public class ChunkMap extends ChunkStorage implements ChunkHolder.PlayerProvider
+         // Paper - rewrite chunk system
+         this.tickingGenerated = new AtomicInteger();
+         this.playerMap = new PlayerMap();
+-        this.entityMap = new Int2ObjectOpenHashMap();
++        this.entityMap = new Int2ObjectLinkedOpenHashMap(); // SlimyPurpur - use linked map for entity trackers - provides faster iteration
+         this.chunkTypeCache = new Long2ByteOpenHashMap();
+         this.chunkSaveCooldowns = new Long2LongOpenHashMap();
+         this.unloadQueue = Queues.newConcurrentLinkedQueue();

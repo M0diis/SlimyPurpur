@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: M0diis <modestas.kazlauskas@ktu.edu>
+Date: Sat, 20 Jan 2024 15:10:18 +0200
+Subject: [PATCH] Hardcode version
+
+
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+index 99597258e8e88cd9e2c901c4ac3ff7faeeabee2b..4d34d120b1f52ab09169146863877c53d5bfad32 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+@@ -9,21 +9,6 @@ import org.bukkit.Bukkit;
+ 
+ public final class Versioning {
+     public static String getBukkitVersion() {
+-        String result = "Unknown-Version";
+-
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/org.purpurmc.purpur/purpur-api/pom.properties"); // Pufferfish // Purpur
+-        Properties properties = new Properties();
+-
+-        if (stream != null) {
+-            try {
+-                properties.load(stream);
+-
+-                result = properties.getProperty("version");
+-            } catch (IOException ex) {
+-                Logger.getLogger(Versioning.class.getName()).log(Level.SEVERE, "Could not get Bukkit version!", ex);
+-            }
+-        }
+-
+-        return result;
++        return "1.20.2-R0.1-SNAPSHOT"; // SlimyPurpur
+     }
+ }
